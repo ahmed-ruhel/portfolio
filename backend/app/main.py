@@ -35,6 +35,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Allow Google Sites and institutional portals to embed the site in an iframe
+@app.middleware("http")
+async def add_iframe_friendly_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = "frame-ancestors *;"
+    if "x-frame-options" in response.headers:
+        del response.headers["x-frame-options"]
+    return response
+
 # Mount Routers under /api
 app.include_router(auth.router)
 app.include_router(stages.router)

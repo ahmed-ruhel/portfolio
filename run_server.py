@@ -11,17 +11,22 @@ BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
+import os
+
 if __name__ == "__main__":
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+
     print("=" * 70)
     print("  KLE TECHNOLOGICAL UNIVERSITY - CAPSTONE PORTAL BACKEND")
-    print("  FastAPI Server starting on http://127.0.0.1:8000")
-    print("  Interactive API Swagger Docs: http://127.0.0.1:8000/docs")
-    print("  Web App Frontend: http://127.0.0.1:8000/")
+    print(f"  FastAPI Server starting on http://{host}:{port}")
+    print(f"  Interactive API Swagger Docs: http://{host}:{port}/docs")
+    print(f"  Web App Frontend: http://{host}:{port}/")
     print("=" * 70)
     uvicorn.run(
         "backend.app.main:app",
-        host="127.0.0.1",
-        port=8000,
+        host=host,
+        port=port,
         reload=False,
         log_level="info"
     )
