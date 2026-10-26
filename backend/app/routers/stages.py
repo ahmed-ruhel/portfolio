@@ -116,7 +116,7 @@ async def add_media_to_stage(stage_id: str, media_item: Dict[str, Any] = Body(..
     # Determine source value
     source_val = ""
     if media_type == "image":
-        source_val = media_item.get("presetKey") or media_item.get("url") or media_item.get("fileUrl") or ""
+        source_val = media_item.get("src") or media_item.get("fileUrl") or media_item.get("url") or media_item.get("presetKey") or ""
     elif media_type == "graph":
         source_val = media_item.get("presetKey") or media_item.get("imageUrl") or ""
         source_type = media_item.get("graphMode", source_type)

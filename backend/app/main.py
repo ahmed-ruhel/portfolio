@@ -51,7 +51,33 @@ app.include_router(uploads.router)
 app.include_router(kinematics.router)
 app.include_router(dossier.router)
 
-# Mount Uploads directory
+import base64
+from fastapi.responses import Response
+from .database import init_db, get_file_from_db
+
+# Auto-restoring uploads route (survives Render restarts)
+@app.get("/uploads/{folder}/{filename}", include_in_schema=False)
+async def serve_upload_with_db_fallback(folder: str, filename: str):
+    file_path = UPLOADS_DIR / folder / filename
+    if file_path.exists():
+        return FileResponse(str(file_path))
+    
+    # Check SQLite database for persisted file
+    row = await get_file_from_db(filename)
+    if row and row.get("data_base64"):
+        file_bytes = base64.b64decode(row["data_base64"])
+        # Restore to disk cache
+        try:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(file_path, "wb") as f:
+                f.write(file_bytes)
+        except Exception:
+            pass
+        return Response(content=file_bytes, media_type=row.get("mime_type", "application/octet-stream"))
+    
+    return JSONResponse(status_code=404, content={"detail": f"File '{filename}' not found"})
+
+# Mount Uploads directory fallback
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 # Frontend Static Assets Serving

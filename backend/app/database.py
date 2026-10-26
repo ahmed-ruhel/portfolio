@@ -178,6 +178,17 @@ async def init_db():
             );
         """)
 
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS uploaded_files (
+                id TEXT PRIMARY KEY,
+                filename TEXT NOT NULL UNIQUE,
+                mime_type TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL,
+                data_base64 TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+        """)
+
         # Seed default student user if empty
         async with db.execute("SELECT COUNT(*) as count FROM users") as cursor:
             row = await cursor.fetchone()
@@ -274,6 +285,7 @@ async def fetch_full_stages() -> List[Dict[str, Any]]:
                         }
 
                         if m["media_type"] == "image":
+                            media_entry["src"] = meta.get("src") or m["source_val"]
                             if m["source_type"] == "preset":
                                 media_entry["presetKey"] = m["source_val"]
                             elif m["source_type"] == "url":
@@ -332,3 +344,22 @@ async def reset_to_exemplar():
                 VALUES (?, ?, ?, ?, ?, ?, '{}', ?)
             """, (stage_id, m_type, title, caption, s_type, s_val, now))
         await db.commit()
+
+async def save_file_to_db(file_id: str, filename: str, mime_type: str, size_bytes: int, data_base64: str):
+    """Persists uploaded file directly into SQLite database so it survives Render restarts."""
+    now = datetime.utcnow().isoformat()
+    async with get_db_connection() as db:
+        await db.execute("""
+            INSERT OR REPLACE INTO uploaded_files (id, filename, mime_type, size_bytes, data_base64, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (file_id, filename, mime_type, size_bytes, data_base64, now))
+        await db.commit()
+
+async def get_file_from_db(filename: str):
+    """Retrieves uploaded file from SQLite database if missing from disk."""
+    async with get_db_connection() as db:
+        async with db.execute("SELECT * FROM uploaded_files WHERE filename = ?", (filename,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return dict(row)
+    return None

@@ -2,13 +2,16 @@ import os
 import uuid
 import csv
 import io
+import base64
 from pathlib import Path
+from PIL import Image
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from ..config import (
     CAD_UPLOAD_DIR, IMAGES_UPLOAD_DIR, DATA_UPLOAD_DIR, VIDEOS_UPLOAD_DIR,
     ALLOWED_CAD_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_DATA_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS,
     MAX_CAD_SIZE, MAX_IMAGE_SIZE, MAX_DATA_SIZE, MAX_VIDEO_SIZE
 )
+from ..database import save_file_to_db, get_file_from_db
 
 router = APIRouter(prefix="/api/uploads", tags=["Engineering Media Uploads"])
 
@@ -39,6 +42,19 @@ async def upload_cad_model(file: UploadFile = File(...)):
     with open(target_path, "wb") as f:
         f.write(contents)
 
+    # Persist in SQLite so model survives Render ephemeral disk restarts
+    try:
+        b64_data = base64.b64encode(contents).decode("ascii")
+        await save_file_to_db(
+            file_id=unique_name,
+            filename=unique_name,
+            mime_type=file.content_type or "application/octet-stream",
+            size_bytes=len(contents),
+            data_base64=b64_data
+        )
+    except Exception as e:
+        print(f"Warning: Failed to persist CAD to SQLite: {e}")
+
     format_label = ext.replace(".", "").upper()
     return {
         "status": "success",
@@ -58,8 +74,8 @@ async def upload_image(file: UploadFile = File(...)):
             detail=f"Unsupported image extension '{ext}'. Allowed: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}"
         )
     
-    contents = await file.read()
-    if len(contents) > MAX_IMAGE_SIZE:
+    raw_contents = await file.read()
+    if len(raw_contents) > MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Image exceeds max size limit of {MAX_IMAGE_SIZE // (1024*1024)} MB"
@@ -69,14 +85,59 @@ async def upload_image(file: UploadFile = File(...)):
     unique_name = f"{uuid.uuid4().hex[:8]}_{clean_name}"
     target_path = IMAGES_UPLOAD_DIR / unique_name
 
+    # Compress / optimize with Pillow if raster image
+    final_bytes = raw_contents
+    mime_type = file.content_type or f"image/{ext.replace('.', '')}"
+    
+    if ext in {".png", ".jpg", ".jpeg", ".webp"}:
+        try:
+            with Image.open(io.BytesIO(raw_contents)) as img:
+                # Convert RGBA to RGB for JPEG
+                if img.mode in ("RGBA", "P") and ext in {".jpg", ".jpeg"}:
+                    img = img.convert("RGB")
+                
+                # Resize if excessively large (e.g. > 1920px width/height)
+                max_dim = 1920
+                if max(img.width, img.height) > max_dim:
+                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                
+                buf = io.BytesIO()
+                save_format = "JPEG" if ext in {".jpg", ".jpeg"} else ("PNG" if ext == ".png" else "WEBP")
+                if save_format == "JPEG":
+                    img.save(buf, format="JPEG", quality=85, optimize=True)
+                elif save_format == "WEBP":
+                    img.save(buf, format="WEBP", quality=85)
+                else:
+                    img.save(buf, format="PNG", optimize=True)
+                
+                final_bytes = buf.getvalue()
+        except Exception as e:
+            print(f"Image optimization skipped due to: {e}")
+            final_bytes = raw_contents
+
     with open(target_path, "wb") as f:
-        f.write(contents)
+        f.write(final_bytes)
+
+    # Persist in SQLite DB table uploaded_files so Render restarts NEVER lose the image!
+    b64_str = base64.b64encode(final_bytes).decode("ascii")
+    data_uri = f"data:{mime_type};base64,{b64_str}"
+    try:
+        await save_file_to_db(
+            file_id=unique_name,
+            filename=unique_name,
+            mime_type=mime_type,
+            size_bytes=len(final_bytes),
+            data_base64=b64_str
+        )
+    except Exception as e:
+        print(f"Warning: Failed to persist image to SQLite: {e}")
 
     return {
         "status": "success",
         "fileName": file.filename,
-        "sizeBytes": len(contents),
-        "fileUrl": f"/uploads/images/{unique_name}"
+        "sizeBytes": len(final_bytes),
+        "fileUrl": f"/uploads/images/{unique_name}",
+        "dataUrl": data_uri
     }
 
 @router.post("/csv")

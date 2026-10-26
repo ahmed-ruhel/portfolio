@@ -6412,7 +6412,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCancelImage) btnCancelImage.addEventListener('click', () => addImageModal.classList.remove('active'));
 
   if (btnConfirmAddImage) {
-    btnConfirmAddImage.addEventListener('click', () => {
+    btnConfirmAddImage.addEventListener('click', async () => {
       const stageId = imgTargetStageSelect.value;
       const stage = stagesData.find(s => s.id === stageId);
       if (!stage) return;
@@ -6422,6 +6422,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (activeImgSource === 'upload' && imgFileInput.files && imgFileInput.files[0]) {
         const file = imgFileInput.files[0];
+        showToast('⏳ Uploading & optimizing image to backend...');
+        
+        // Try uploading to FastAPI backend
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          const uploadRes = await fetch('/api/uploads/image', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (uploadRes.ok) {
+            const data = await uploadRes.json();
+            const imageUrl = data.fileUrl || data.dataUrl;
+            attachMediaToStage(stage, {
+              id: `img_${Date.now()}`,
+              type: 'image',
+              title: title,
+              src: imageUrl,
+              fileUrl: data.fileUrl,
+              sourceType: 'upload',
+              caption: caption
+            });
+            addImageModal.classList.remove('active');
+            showToast('✅ Image uploaded and permanently saved in database!');
+            return;
+          }
+        } catch (err) {
+          console.warn('Backend image upload failed, falling back to local storage', err);
+        }
+
+        // Local fallback if offline
         const reader = new FileReader();
         reader.onload = (e) => {
           attachMediaToStage(stage, {
@@ -6429,17 +6461,20 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'image',
             title: title,
             src: e.target.result,
+            sourceType: 'upload',
             caption: caption
           });
           addImageModal.classList.remove('active');
         };
         reader.readAsDataURL(file);
+
       } else if (activeImgSource === 'url' && imgUrlInput.value.trim()) {
         attachMediaToStage(stage, {
           id: `img_${Date.now()}`,
           type: 'image',
           title: title,
           src: imgUrlInput.value.trim(),
+          sourceType: 'url',
           caption: caption
         });
         addImageModal.classList.remove('active');
@@ -6451,6 +6486,8 @@ document.addEventListener('DOMContentLoaded', () => {
           type: 'image',
           title: title,
           src: generateSvgDiagram(presetKey),
+          sourceType: 'preset',
+          presetKey: presetKey,
           caption: caption
         });
         addImageModal.classList.remove('active');
@@ -7188,6 +7225,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const ext = selectedCadFileObj.name.split('.').pop().toLowerCase();
+        showToast('⏳ Uploading 3D CAD model to backend...');
+
+        try {
+          const formData = new FormData();
+          formData.append('file', selectedCadFileObj);
+          const cadRes = await fetch('/api/uploads/cad', { method: 'POST', body: formData });
+          if (cadRes.ok) {
+            const cadData = await cadRes.json();
+            attachMediaToStage(stage, {
+              id: `cad_${Date.now()}`,
+              type: 'cad',
+              title: title,
+              cadType: 'custom_file',
+              format: ext,
+              fileName: selectedCadFileObj.name,
+              fileSize: selectedCadFileObj.size,
+              fileUrl: cadData.fileUrl,
+              material: material,
+              desc: desc || `Imported ${ext.toUpperCase()} 3D Model: ${selectedCadFileObj.name}`
+            });
+            addCadModal.classList.remove('active');
+            showToast('✅ 3D CAD model saved in database!');
+            return;
+          }
+        } catch (err) {
+          console.warn('Backend CAD upload failed, falling back to local storage', err);
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
           const fileData = e.target.result; // Data URL Base64
@@ -7223,17 +7288,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Helper to Attach Media to Stage
-  function attachMediaToStage(stage, mediaObj) {
+  // Helper to Attach Media to Stage (Optimistic UI + SQLite Backend Sync)
+  async function attachMediaToStage(stage, mediaObj) {
     if (!stage.media) stage.media = [];
     stage.media.push(mediaObj);
     saveStagesData();
     renderAllStages();
     showToast(`Added ${mediaObj.type.toUpperCase()} to ${stage.number}!`);
+
+    // Async persist to SQLite backend
+    try {
+      await fetch(`/api/stages/${stage.id}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mediaObj)
+      });
+    } catch (err) {
+      console.warn('Media backend sync deferred:', err);
+    }
   }
 
   // Helper to Delete Media from Stage
-  function deleteMediaItem(stageId, mediaId) {
+  async function deleteMediaItem(stageId, mediaId) {
     const stage = stagesData.find(s => s.id === stageId);
     if (!stage || !stage.media) return;
 
@@ -7241,6 +7317,13 @@ document.addEventListener('DOMContentLoaded', () => {
     saveStagesData();
     renderAllStages();
     showToast(`Removed attachment from ${stage.number}`);
+
+    // Async delete from backend
+    try {
+      await fetch(`/api/stages/${stageId}/media/${mediaId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Backend media deletion failed:', err);
+    }
   }
 
   // ---------------------------------------------------------------------------
