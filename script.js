@@ -1101,31 +1101,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const stage = stagesData.find(s => s.id === stageId);
     if (!stage || !stage.media) return;
 
+    // Remove from in-memory data and re-render immediately
     stage.media = stage.media.filter(m => String(m.id) !== String(mediaId));
     saveStagesData();
     renderAllStages();
-    showToast(`Removed attachment from Stage ${stage.number || stageId}`);
+    showToast('Attachment removed.');
 
-    // Async delete from backend
+    // Async delete from backend (non-blocking)
     try {
       await fetch(`/api/stages/${stageId}/media/${encodeURIComponent(mediaId)}`, { method: 'DELETE' });
     } catch (err) {
-      console.warn('Backend media deletion failed:', err);
+      console.warn('Backend media deletion failed (non-critical):', err);
     }
   }
 
-  // Document-level event delegation for delete-media buttons
-  // (replaces per-render querySelectorAll so newly rendered buttons always work)
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-action="delete-media"]');
-    if (!btn) return;
-    e.stopPropagation();
-    const stageId = btn.getAttribute('data-stage');
-    const mediaId = btn.getAttribute('data-media-id');
-    showConfirmModal('Delete Attachment', 'Are you sure you want to remove this media attachment?', () => {
-      deleteMediaItem(stageId, mediaId);
-    });
-  });
+  // Expose globally so onclick attributes on dynamically rendered buttons can always reach it
+  window.__kleDeleteMedia = function(stageId, mediaId) {
+    deleteMediaItem(stageId, mediaId);
+  };
 
   async function checkBackendHealth() {
     try {
@@ -1321,7 +1314,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="media-type-badge ${badgeClass}"><i class="${iconClass}"></i> ${badgeLabel}</span>
           <span class="media-card-title" title="${item.title}">${item.title}</span>
         </div>
-        <button class="btn-delete-media" data-action="delete-media" data-stage="${stageId}" data-media-id="${item.id}" title="Remove media">
+        <button class="btn-delete-media" title="Remove media">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
@@ -1332,6 +1325,19 @@ document.addEventListener('DOMContentLoaded', () => {
         ${item.caption || item.desc || ''}
       </div>
     `;
+
+    // Bind delete button directly on the element — most reliable, works after every re-render
+    const deleteBtn = card.querySelector('.btn-delete-media');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        // Store ids as closure variables so they are always correct
+        const sid = stageId;
+        const mid = String(item.id);
+        deleteMediaItem(sid, mid);
+      });
+    }
 
     container.appendChild(card);
     const bodyEl = card.querySelector(`#media-body-${item.id}`);
