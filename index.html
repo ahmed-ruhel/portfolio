@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KLE ME Student Design Portfolio — Capstone Engineering Portal</title>
+  <meta name="description"
+    content="KLE Technological University Mechanical Engineering Capstone Portfolio (kle-me-portfolio-v1). Institutional Google SSO login, Kinematic CAD Scotch-Yoke simulation, Pugh decision matrices, and S1-S11 stage submissions.">
+
+  <!-- Modern Luxury Typography matching UrbanEye theme -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js for Interactive Engineering Graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Three.js & Controls for 3D CAD Model Viewer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Ambient Animated Background Glows (UrbanEye luxury aesthetic) -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- FLOATING LUXURY PILL NAVBAR (Exact UrbanEye styling & perfect alignment) -->
+  <header class="navbar-wrapper">
+    <nav class="navbar" id="mainNavbar">
+      <a href="#login" class="nav-brand" data-page="page-login">
+        <div class="brand-crest"><i class="fa-solid fa-compass-drafting"></i></div>
+        <span class="brand-text">KLE Tech <span class="brand-highlight">Mechanical</span></span>
+      </a>
+
+      <!-- Navigation Links: Locked until authenticated -->
+      <div class="nav-links">
+        <button class="nav-link active" data-page="page-login"><i class="fa-solid fa-shield-halved"></i> Login
+          SSO</button>
+        <button class="nav-link auth-required" data-page="page-create-portfolio"><i class="fa-solid fa-folder-plus"></i> Create
+          Portfolio</button>
+        <button class="nav-link auth-required" data-page="page-stages"><i class="fa-solid fa-lock lock-icon"></i> S1–S11
+          Stages</button>
+        <button class="nav-link auth-required" data-page="page-profile"><i class="fa-solid fa-lock lock-icon"></i>
+          Profile</button>
+        <button class="nav-link auth-required" id="navLinkPublishedSite" data-page="page-published-site" style="display:none;"><i class="fa-solid fa-globe"></i> Published Site</button>
+      </div>
+
+      <!-- Action Group -->
+      <div class="nav-actions">
+        <button class="nav-action-btn" id="btnExemplarProject" title="Load exemplar capstone project">
+          <i class="fa-solid fa-rotate text-caramel"></i> Exemplar
+        </button>
+        <button class="nav-action-btn icon-only" id="btnPrintDossier" title="Print official engineering dossier">
+          <i class="fa-solid fa-print"></i>
+        </button>
+        <button class="nav-action-btn icon-only" id="btnExportJson" title="Export portfolio as JSON schema">
+          <i class="fa-solid fa-code text-caramel"></i>
+        </button>
+
+        <!-- FastAPI Backend Status Indicator & Swagger API Link -->
+        <a href="/docs" target="_blank" class="backend-status-pill" id="backendStatusPill" title="FastAPI + SQLite REST Backend (Click to open Swagger API Docs)">
+          <span class="backend-dot" id="backendDot"></span>
+          <span id="backendStatusText">FastAPI</span>
+        </a>
+
+        <!-- UrbanEye Exact Dark/Light Theme Toggle -->
+        <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle theme">
+          <i class="fa-regular fa-moon" id="themeIcon"></i>
+          <span id="themeLabel">Dark</span>
+        </button>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle mobile menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- SEPARATE RIGHT-CORNER FLOATING AUTH PILL (Dynamic Standalone Capsule) -->
+  <aside class="corner-pill-wrapper" aria-label="Student session status">
+    <button class="corner-auth-pill unauthenticated" id="userStatusPill" data-page="page-login"
+      onclick="window.navigateToPage && window.navigateToPage(this.getAttribute('data-page'))"
+      title="Institutional Login">
+      <span class="live-dot red" id="statusLiveDot"></span>
+      <span id="userShortName">Sign In</span>
+      <i class="fa-solid fa-arrow-right-to-bracket pill-icon" id="userStatusIcon"></i>
+    </button>
+  </aside>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <button class="mobile-link active" data-page="page-login"><i class="fa-solid fa-shield-halved"></i> Login
+      SSO</button>
+    <button class="mobile-link" data-page="page-create-portfolio"><i class="fa-solid fa-folder-plus"></i> Create
+      Portfolio</button>
+    <button class="mobile-link" data-page="page-stages"><i class="fa-solid fa-list-check"></i> S1–S11 Stage
+      Dossiers</button>
+    <button class="mobile-link" data-page="page-profile"><i class="fa-solid fa-user-graduate"></i> Student Profile &
+      Records</button>
+    <button class="mobile-link" id="mobileLinkPublishedSite" data-page="page-published-site" style="display:none;"><i class="fa-solid fa-globe"></i> Published Site</button>
+  </div>
+
+  <main class="page-container">
+
+    <!-- =======================================================================
+         PAGE 1: INSTITUTIONAL LOGIN (DEFAULT FIRST PAGE SHOWN TO USER)
+         ======================================================================= -->
+    <div class="page-view active" id="page-login">
+
+      <!-- Login Hero Header -->
+      <section class="hero-section">
+        <div class="hero-container">
+          <div class="sih-badge-container">
+            <div class="sih-badge">
+              <span class="badge-sparkle">✦</span>
+              <span>INSTITUTIONAL AUTHENTICATION • SINGLE SIGN-ON</span>
+            </div>
+          </div>
+
+          <h1 class="hero-headline">
+            College Google Account<br>
+            <span class="headline-highlight">Authentication Portal</span>
+          </h1>
+
+        </div>
+      </section>
+
+      <!-- Login Form Card (Centered Single Card) -->
+      <section class="auth-section">
+        <div class="auth-wrapper">
+
+          <div class="auth-card">
+            <div class="ac-header">
+              <h3><i class="fa-solid fa-id-badge text-caramel"></i> Sign In with College Credentials</h3>
+            </div>
+
+            <form id="loginForm" onsubmit="window.performLogin && window.performLogin(event); return false;">
+              <div class="form-group">
+                <label for="collegeEmail">Institutional College Email (@kletech.ac.in or @bvb.edu):</label>
+                <input type="email" id="collegeEmail" placeholder="e.g. student@kletech.ac.in" autocomplete="email" required>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="studentName">Student Name:</label>
+                  <input type="text" id="studentName" placeholder="Enter your full name" autocomplete="name" required>
+                </div>
+                <div class="form-group">
+                  <label for="usnRoll">USN / Roll Number:</label>
+                  <input type="text" id="usnRoll" placeholder="e.g. 01FE..." autocomplete="off" required>
+                </div>
+              </div>
+
+              <button type="button" class="btn-primary w-full" id="btnSignInSubmit"
+                onclick="window.performLogin && window.performLogin(event)">
+                <i class="fa-brands fa-google"></i> Sign In with College Google Account
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =======================================================================
+         PAGE 2: S1–S11 STAGE DOSSIERS
+         ======================================================================= -->
+    <div class="page-view" id="page-stages">
+
+      <section class="page-hero">
+        <div class="section-tag">CAPSTONE STAGES S1–S11 FORMAL DOSSIERS</div>
+        <h2 class="page-title">Capstone Engineering Stage Deliverables</h2>
+        <p class="page-subtitle">Formally structured according to the KLE Mechanical Engineering Capstone Specification
+        </p>
+      </section>
+
+      <section class="workbench-section">
+        <div class="stages-card">
+
+          <!-- Stage Filter Pills (S1 to S11 matching video) -->
+          <div class="stage-pills-bar">
+            <button class="stage-pill" data-stage="all">Show All (11)</button>
+            <button class="stage-pill active" data-stage="S1">S1 Need</button>
+            <button class="stage-pill" data-stage="S2">S2 Concept</button>
+            <button class="stage-pill" data-stage="S3">S3 Functional</button>
+            <button class="stage-pill" data-stage="S4">S4 Architecture</button>
+            <button class="stage-pill" data-stage="S5">S5 Subsystem</button>
+            <button class="stage-pill" data-stage="S6">S6 Component</button>
+            <button class="stage-pill" data-stage="S7">S7 CAD</button>
+            <button class="stage-pill" data-stage="S8">S8 Material</button>
+            <button class="stage-pill" data-stage="S9">S9 Fabrication</button>
+            <button class="stage-pill" data-stage="S10">S10 Testing</button>
+            <button class="stage-pill" data-stage="S11">S11 Report</button>
+          </div>
+
+          <!-- Controls Strip -->
+          <div class="stage-controls-strip">
+            <div class="stage-search-box">
+              <i class="fa-solid fa-magnifying-glass text-caramel"></i>
+              <input type="text" id="stageSearchInput" placeholder="Search prompts, calculations, evidence...">
+            </div>
+            <div class="stage-status-filter">
+              <label for="stageStatusSelect">Filter Status:</label>
+              <select id="stageStatusSelect">
+                <option value="all">All Statuses</option>
+                <option value="completed">Completed</option>
+                <option value="in_progress">In Progress</option>
+                <option value="under_review">Under Review</option>
+              </select>
+            </div>
+            <div class="stage-quick-actions">
+              <button class="btn-primary" id="btnPublishPortfolio" title="Publish portfolio with team info (Google Sites style)">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Publish
+              </button>
+              <button class="btn-ctrl" id="btnViewPublishedSite" style="display:none;" title="View Live Published Google Site">
+                <i class="fa-solid fa-globe text-caramel"></i> Live Site
+              </button>
+              <button class="btn-ctrl" id="btnExpandAllStages" title="Expand or collapse all stage blocks">
+                <i class="fa-solid fa-arrows-up-down"></i> Expand All
+              </button>
+              <button class="btn-ctrl" id="btnLoadSyntheticData" title="Load sample synthetic engineering data, graphs, and 3D CAD models">
+                <i class="fa-solid fa-flask text-caramel"></i> Load Sample Data
+              </button>
+              <button class="btn-ctrl" id="btnClearAllStages" title="Clear all prompts and media back to completely empty">
+                <i class="fa-solid fa-trash-can text-caramel"></i> Clear Stages
+              </button>
+            </div>
+          </div>
+
+          <!-- Accordion of Stages S1 to S11 (Dynamically Populated & Fully Editable) -->
+          <div class="stages-accordion" id="stagesAccordion">
+            <!-- Stages S1 to S11 rendered dynamically with full editing, media, graphs, videos, and 3D CAD models -->
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =======================================================================
+         PAGE 3: CREATE A TEAM PORTFOLIO (MATCHING USER ATTACHMENTS)
+         ======================================================================= -->
+    <div class="page-view" id="page-create-portfolio">
+
+      <section class="page-hero">
+        <div class="section-tag">CAPSTONE PORTFOLIO REGISTRATION</div>
+        <h2 class="page-title">Create a Team Portfolio</h2>
+        <p class="page-subtitle">Configure your engineering team, project theme, and capstone artefact title</p>
+      </section>
+
+      <section class="create-portfolio-section">
+        <div class="create-portfolio-card">
+          <form id="createPortfolioForm" onsubmit="window.saveTeamPortfolio && window.saveTeamPortfolio(event); return false;">
+            
+            <div class="form-group" style="margin-bottom: 22px;">
+              <label for="pfTeamNumber" class="pf-label">Team name or number</label>
+              <input type="text" id="pfTeamNumber" class="pf-input" placeholder="Team 07" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 22px;">
+              <label for="pfProjectTheme" class="pf-label">Project theme</label>
+              <input type="text" id="pfProjectTheme" class="pf-input" placeholder="Smart Campus" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 26px;">
+              <label for="pfProjectTitle" class="pf-label">Artefact / project title</label>
+              <input type="text" id="pfProjectTitle" class="pf-input" placeholder="Resource Allocation System" required>
+            </div>
+
+            <div class="pf-button-group">
+              <button type="submit" class="btn-submit-portfolio" id="btnSubmitPortfolio">
+                Create portfolio &rarr;
+              </button>
+              <button type="button" class="btn-cancel-portfolio" id="btnCancelPortfolio">
+                Cancel
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =======================================================================
+         PAGE 4: PROFILE & ACADEMIC RECORDS (MATCHING ATTACHED IMAGE)
+         ======================================================================= -->
+    <div class="page-view" id="page-profile">
+
+      <section class="page-hero">
+        <div class="section-tag">INSTITUTIONAL STUDENT RECORD</div>
+        <h2 class="page-title">Candidate Profile & Academic Checkpoints</h2>
+        <p class="page-subtitle">Verified mechanical engineering capstone registration and project guide sign-offs</p>
+      </section>
+
+      <section class="profile-section">
+        <!-- Top Action Button Matching User Attachment Image 2 -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 18px;">
+          <button type="button" class="btn-create-team-portfolio" id="btnOpenCreatePortfolio" data-page="page-create-portfolio">
+            <i class="fa-solid fa-plus"></i> Create a team portfolio
+          </button>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-top" style="border-bottom: none; padding-bottom: 8px; margin-bottom: 12px;">
+            <div class="avatar-box">
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="profile-main-meta">
+              <h3 id="displayStudentName">Ruhel Ahmed</h3>
+              <span class="usn-tag" id="displayUSN">01FE24BME009</span>
+              <p>B.E. Mechanical Engineering • KLE Technological University, Hubballi</p>
+            </div>
+          </div>
+
+          <!-- Guide horizontal banner matching Image 1 -->
+          <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light); font-size: 0.88rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em;">FACULTY PROJECT GUIDE</span>
+            <strong id="displayGuideName" style="color: var(--text-primary);">Prof. Anand S.</strong>
+            <span>Department of Mechanical Engineering</span>
+          </div>
+
+          <div class="profile-details-grid">
+            <div class="pd-item">
+              <span class="pd-label">Project Title:</span>
+              <strong id="displayProjectTitle">Design and Kinematic Synthesis of Opposed Scotch- Yoke Dual Cutter-Bar for Grain Harvesters</strong>
+            </div>
+            <div class="pd-item">
+              <span class="pd-label">Capstone Team ID:</span>
+              <strong id="displayTeamId">Team B14 (4 Members)</strong>
+            </div>
+            <div class="pd-item">
+              <span class="pd-label">Project Theme:</span>
+              <strong id="displayProjectTheme">Smart Campus</strong>
+            </div>
+            <div class="pd-item">
+              <span class="pd-label">Account Action:</span>
+              <button class="btn-ctrl" id="btnSignOut" style="width:fit-content; margin-top:4px;">
+                <i class="fa-solid fa-right-from-bracket text-red"></i> Sign Out of KLE Portal
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- =======================================================================
+         PAGE 5: GOOGLE SITES STYLE PUBLISHED PORTFOLIO VIEW
+         ======================================================================= -->
+    <div class="page-view" id="page-published-site">
+
+      <!-- Google Sites Published Header Bar -->
+      <div class="google-site-topbar">
+        <div class="gs-topbar-left">
+          <div class="gs-site-logo"><i class="fa-solid fa-compass-drafting text-caramel"></i></div>
+          <div class="gs-site-title-box">
+            <span class="gs-site-badge"><span class="gs-live-pulse"></span> PUBLISHED LIVE SITE</span>
+            <h4 class="gs-site-name" id="pubSiteHeaderTitle">Team 07 — Resource Allocation System</h4>
+          </div>
+        </div>
+        <div class="gs-topbar-actions">
+          <button class="btn-ctrl" id="btnCopyPublicLink" title="Copy public shareable link">
+            <i class="fa-solid fa-link"></i> Copy Link
+          </button>
+          <button class="btn-ctrl" id="btnPrintPublishedSite" title="Print or save as PDF">
+            <i class="fa-solid fa-print"></i> Print / PDF
+          </button>
+          <button class="btn-primary" id="btnEditSiteReturn" title="Return to S1–S11 editor">
+            <i class="fa-solid fa-pen-to-square"></i> Edit Stages
+          </button>
+        </div>
+      </div>
+
+      <!-- Google Sites Hero Banner -->
+      <section class="google-site-hero">
+        <div class="gs-hero-content">
+          <div class="gs-hero-chips">
+            <span class="gs-chip theme" id="pubHeroTheme"><i class="fa-solid fa-tag"></i> Theme: Smart Campus</span>
+            <span class="gs-chip team" id="pubHeroTeam"><i class="fa-solid fa-users"></i> Team 07</span>
+            <span class="gs-chip status"><i class="fa-solid fa-circle-check text-caramel"></i> KLE Capstone Verified</span>
+          </div>
+          <h1 class="gs-hero-title" id="pubHeroTitle">Resource Allocation System</h1>
+          <p class="gs-hero-subtitle" id="pubHeroSubtitle">Comprehensive S1–S11 Mechanical Engineering Design & Synthesis Dossier</p>
+          
+          <div class="gs-meta-row">
+            <div class="gs-meta-item">
+              <span class="gs-meta-label">STUDENT LEAD / AUTHOR</span>
+              <strong id="pubHeroStudent">Ruhel Ahmed (01FE24BME009)</strong>
+            </div>
+            <div class="gs-meta-item">
+              <span class="gs-meta-label">INSTITUTION</span>
+              <span>KLE Technological University, Hubballi</span>
+            </div>
+            <div class="gs-meta-item">
+              <span class="gs-meta-label">FACULTY PROJECT GUIDE</span>
+              <strong id="pubHeroGuide">Prof. Anand S.</strong>
+            </div>
+            <div class="gs-meta-item">
+              <span class="gs-meta-label">PUBLICATION TIMESTAMP</span>
+              <span id="pubHeroDate">Published</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Google Sites Horizontal Stage Quick Bar -->
+      <nav class="google-site-nav" id="googleSiteNav">
+        <div class="gs-nav-links" id="gsNavLinks">
+          <a href="#pub-stage-S1" class="gs-nav-link active">S1 Need</a>
+          <a href="#pub-stage-S2" class="gs-nav-link">S2 Concept</a>
+          <a href="#pub-stage-S3" class="gs-nav-link">S3 Functional</a>
+          <a href="#pub-stage-S4" class="gs-nav-link">S4 Architecture</a>
+          <a href="#pub-stage-S5" class="gs-nav-link">S5 Subsystem</a>
+          <a href="#pub-stage-S6" class="gs-nav-link">S6 Component</a>
+          <a href="#pub-stage-S7" class="gs-nav-link">S7 CAD</a>
+          <a href="#pub-stage-S8" class="gs-nav-link">S8 Material</a>
+          <a href="#pub-stage-S9" class="gs-nav-link">S9 Fabrication</a>
+          <a href="#pub-stage-S10" class="gs-nav-link">S10 Testing</a>
+          <a href="#pub-stage-S11" class="gs-nav-link">S11 Report</a>
+        </div>
+      </nav>
+
+      <!-- Published Body with S1-S11 Sections Generated Dynamically -->
+      <section class="google-site-body">
+        <div class="gs-container" id="publishedStagesContainer">
+          <!-- Dynamically populated S1-S11 Google Sites blocks with team data, prompts, media, images, CAD, graphs, videos -->
+        </div>
+      </section>
+
+      <!-- Google Sites Published Footer -->
+      <footer class="google-site-footer">
+        <div class="gs-footer-content">
+          <div class="gs-footer-brand">
+            <strong>KLE Technological University • Department of Mechanical Engineering</strong>
+            <p>Official Capstone Engineering Portfolio Archive • Verified Public Dossier</p>
+          </div>
+          <div class="gs-footer-seal">
+            <i class="fa-solid fa-stamp text-caramel"></i>
+            <span>Verified Institutional Publication</span>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+
+  </main>
+
+  <!-- LUXURY FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col brand-col">
+        <span class="brand-text">KLE Tech <span class="brand-highlight">Mechanical</span></span>
+        <p class="footer-tagline">
+          Capstone Engineering Design Portal (kle-me-portfolio-v1). Developed for KLE Technological University,
+          Hubballi.
+        </p>
+        <span class="hackathon-tag">Department of Mechanical Engineering</span>
+      </div>
+
+      <div class="footer-col">
+        <h4>Navigation</h4>
+        <a href="#login" class="footer-nav-link" data-page="page-login">Login SSO</a>
+        <a href="#create-portfolio" class="footer-nav-link" data-page="page-create-portfolio">Create Portfolio</a>
+        <a href="#stages" class="footer-nav-link" data-page="page-stages">S1–S11 Stage Dossiers</a>
+        <a href="#profile" class="footer-nav-link" data-page="page-profile">Student Profile</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Engineering Tools</h4>
+        <span>Scotch-Yoke CAD Simulation</span>
+        <span>Pugh Multi-Criteria Matrix</span>
+        <span>Dynamic Force Cancellation</span>
+        <span>S1–S11 Capstone Dossier</span>
+      </div>
+
+      <div class="footer-col">
+        <h4>Institutional Portal</h4>
+        <div class="status-indicator">
+          <span class="status-pulse green"></span>
+          <span>Google SSO Sync: Active</span>
+        </div>
+        <p class="footer-copy">© 2026 KLE Technological University. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- =======================================================================
+       STAGE S1–S11 EDITING & ATTACHMENT MODALS
+       ======================================================================= -->
+
+  <!-- 1. Edit / Add Prompt Deliverable Modal -->
+  <div class="modal-overlay" id="editPromptModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalPromptTitle"><i class="fa-solid fa-pen text-caramel"></i> Edit Stage Deliverable Prompt</h3>
+        <button class="close-modal" id="btnClosePromptModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modalPromptStageId">
+        <input type="hidden" id="modalPromptIndex">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="modalPromptIdInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Prompt ID / Code:</label>
+          <input type="text" id="modalPromptIdInput" placeholder="e.g. S1.1 or REQ-01" class="modal-input">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="modalPromptTitleInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Deliverable Title:</label>
+          <input type="text" id="modalPromptTitleInput"
+            placeholder="e.g. User or operating context and evidence of the need" class="modal-input">
+        </div>
+        <div class="form-group">
+          <label for="modalPromptInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Deliverable Content / Detailed
+            Description:</label>
+          <textarea id="modalPromptInput" rows="6" class="modal-textarea"
+            placeholder="Enter full engineering deliverable text, calculations, constraints..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn-ctrl danger" id="btnDeletePrompt" style="display:none;"><i class="fa-solid fa-trash"></i>
+          Delete Prompt</button>
+        <div style="display:flex; gap:10px; margin-left:auto;">
+          <button class="btn-secondary" id="btnCancelPrompt">Cancel</button>
+          <button class="btn-primary" id="btnSavePrompt"><i class="fa-solid fa-check"></i> Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Edit Stage Header Modal -->
+  <div class="modal-overlay" id="editStageModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalStageTitleHeader"><i class="fa-solid fa-pen-to-square text-caramel"></i> Edit Stage Header</h3>
+        <button class="close-modal" id="btnCloseStageModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modalStageKey">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="modalStageTitleInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Stage Name / Title:</label>
+          <input type="text" id="modalStageTitleInput" class="modal-input" placeholder="e.g. Need Definition">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="modalStageQuestionInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Stage Driving Question /
+            Subtitle:</label>
+          <textarea id="modalStageQuestionInput" rows="2" class="modal-textarea"
+            placeholder="e.g. What must the artefact accomplish for its user?"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="modalStageStatusSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Stage Status:</label>
+          <select id="modalStageStatusSelect" class="modal-select">
+            <option value="Completed">Completed (Verified)</option>
+            <option value="In Progress">In Progress (Active)</option>
+            <option value="Under Review">Under Review (Guide Sign-Off Pending)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelStage">Cancel</button>
+        <button class="btn-primary" id="btnSaveStageHeader"><i class="fa-solid fa-check"></i> Save Stage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Add Image Modal -->
+  <div class="modal-overlay" id="addImageModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-image text-caramel"></i> Add Engineering Image</h3>
+        <button class="close-modal" id="btnCloseImageModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="imgTargetStageSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Target Stage (S1–S11):</label>
+          <select id="imgTargetStageSelect" class="modal-select"></select>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="imgTitleInput" style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Image
+            Title / Figure Header:</label>
+          <input type="text" id="imgTitleInput" class="modal-input" placeholder="e.g. Field Survey Tractor Hitch Rig">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Image Source:</label>
+          <div class="modal-tab-group">
+            <button type="button" class="modal-tab-btn active" data-source="preset">Exemplar Presets</button>
+            <button type="button" class="modal-tab-btn" data-source="upload">Upload Local File</button>
+            <button type="button" class="modal-tab-btn" data-source="url">Image URL</button>
+          </div>
+        </div>
+
+        <div id="imgSourcePresetBlock" class="source-block active" style="margin-bottom: 12px;">
+          <label for="imgPresetSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Select Engineering Preset
+            Image:</label>
+          <select id="imgPresetSelect" class="modal-select">
+            <option value="survey">Figure 1.1: Field Vibration Survey & Tiller PTO Hitch Rig</option>
+            <option value="kinematics">Figure 2.1: Opposed Scotch-Yoke Kinematic Vector Loop Diagram</option>
+            <option value="functional">Figure 3.1: Black-Box Energy, Material & Signal Flow Topology</option>
+            <option value="fea">Figure 7.1: Hitch Frame Von Mises Stress FEA Distribution</option>
+            <option value="bom">Figure 7.2: Exploded CAD Assembly & Bill of Materials</option>
+            <option value="microstructure">Figure 8.1: AISI 1080 Martensitic Blade Edge Microstructure</option>
+            <option value="cnc">Figure 9.1: 4-Axis CNC Milling & Knife Serration Tooling Setup</option>
+            <option value="signoff">Figure 11.1: Institutional KLE Tech Faculty Sign-off Certificate</option>
+          </select>
+        </div>
+
+        <div id="imgSourceUploadBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label for="imgFileInput" style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Choose
+            Image File (.png, .jpg, .webp, .svg):</label>
+          <input type="file" id="imgFileInput" accept="image/*" class="modal-input">
+        </div>
+
+        <div id="imgSourceUrlBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label for="imgUrlInput" style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Direct
+            Image URL:</label>
+          <input type="url" id="imgUrlInput" class="modal-input" placeholder="https://example.com/drawing.png">
+        </div>
+
+        <div class="form-group">
+          <label for="imgCaptionInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Caption / Notes:</label>
+          <input type="text" id="imgCaptionInput" class="modal-input"
+            placeholder="e.g. Measured at 850 PTO RPM during sorghum trial">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelImage">Cancel</button>
+        <button class="btn-primary" id="btnConfirmAddImage"><i class="fa-solid fa-plus"></i> Add Image to Stage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Add Interactive Graph Modal -->
+  <div class="modal-overlay" id="addGraphModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-chart-line text-caramel"></i> Add Engineering Graph</h3>
+        <button class="close-modal" id="btnCloseGraphModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="graphTargetStageSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Target Stage (S1–S11):</label>
+          <select id="graphTargetStageSelect" class="modal-select"></select>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="graphTitleInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Graph Title:</label>
+          <input type="text" id="graphTitleInput" class="modal-input"
+            placeholder="e.g. Hand-Arm Vibration Acceleration Ahv vs Frequency">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Graph Source &
+            Type:</label>
+          <div class="modal-tab-group">
+            <button type="button" class="modal-tab-btn active" data-graph-mode="preset">Engineering Presets</button>
+            <button type="button" class="modal-tab-btn" data-graph-mode="image">Import from Image / Plot</button>
+            <button type="button" class="modal-tab-btn" data-graph-mode="custom">Custom Chart Builder</button>
+            <button type="button" class="modal-tab-btn" data-graph-mode="csv">Import CSV Data</button>
+          </div>
+        </div>
+
+        <!-- Mode 1: Engineering Presets -->
+        <div id="graphPresetBlock" class="source-block active" style="margin-bottom: 12px;">
+          <label for="graphPresetSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Select Standard Capstone
+            Preset Curve:</label>
+          <select id="graphPresetSelect" class="modal-select">
+            <option value="vibration">ISO 5349 Hand-Arm Vibration Spectrum (Baseline 11.4 m/s² vs Scotch-Yoke 2.1 m/s²)
+            </option>
+            <option value="kinematics">Scotch-Yoke Kinematics: Dual Displacement x(t) & Velocity v(t) over 0°–360°
+            </option>
+            <option value="cutting_force">Crop Stem Severance Resistance Force (N) vs Knife Stroke Position</option>
+            <option value="shaft_stress">ASME Shaft Combined Bending & Torsional Shear Stress vs Limit (42 MPa)</option>
+            <option value="fatigue">Fatigue S-N Life Endurance Curve for AISI 4140 Quenched & Tempered Steel</option>
+            <option value="pugh_radar">Pugh Concept Evaluation Multi-Criteria Radar Comparison</option>
+            <option value="req_radar">S10 Verification Radar: REQ-01 through REQ-05 Target vs Field Achieved</option>
+          </select>
+        </div>
+
+        <!-- Mode 2: Import Plot / Graph from Image (MATLAB, ANSYS, SolidWorks, Excel, LabVIEW, Oscilloscope) -->
+        <div id="graphImageBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; font-size:0.82rem;">Import Graph / Plot from
+            Image (Local Drive):</label>
+
+          <div class="cad-upload-dropzone" id="graphImgDropzone">
+            <i class="fa-solid fa-chart-area text-caramel" style="font-size:2.2rem;"></i>
+            <div class="cad-dropzone-title">Click to Browse or Drag & Drop Graph Image</div>
+            <div class="cad-dropzone-subtitle">Supports MATLAB, ANSYS FEA, SolidWorks Motion, Excel, LabVIEW,
+              Oscilloscope plot screenshots</div>
+
+            <div class="cad-badge-chips">
+              <span class="cad-badge-chip"><i class="fa-solid fa-file-image"></i> PNG</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-file-image"></i> JPG / JPEG</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-file-image"></i> WEBP</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-file-code"></i> SVG Vector</span>
+            </div>
+
+            <input type="file" id="graphImgFileInput" accept="image/*" style="display:none;">
+          </div>
+
+          <div id="graphImgSelectedInfo" class="cad-file-info-strip" style="display:none;">
+            <div class="cad-file-info-left">
+              <i class="fa-solid fa-file-circle-check"></i>
+              <span id="graphImgFileNameDisplay">plot.png</span>
+              <small id="graphImgFileSizeDisplay" style="color:var(--text-muted);">(0 KB)</small>
+            </div>
+            <span id="graphImgBadge" class="cad-badge-chip" style="background:var(--accent-color); color:#fff;">PLOT
+              IMAGE</span>
+          </div>
+
+          <div style="margin-top: 10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Or quick-load sample plot:</span>
+            <button type="button" class="btn-text-pill" id="btnSampleMatlabPlot"><i class="fa-solid fa-bolt"></i> MATLAB
+              FFT Plot</button>
+            <button type="button" class="btn-text-pill" id="btnSampleAnsysPlot"><i class="fa-solid fa-wave-square"></i>
+              ANSYS Harmonic Plot</button>
+            <button type="button" class="btn-text-pill" id="btnSampleSolidworksPlot"><i class="fa-solid fa-gears"></i>
+              SolidWorks Motion Plot</button>
+          </div>
+
+          <div class="form-row-2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+            <div>
+              <label for="graphSoftwareOrigin"
+                style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Tool / Software
+                Source:</label>
+              <select id="graphSoftwareOrigin" class="modal-select">
+                <option value="MATLAB / Simulink">MATLAB / Simulink Plot</option>
+                <option value="ANSYS FEA">ANSYS Mechanical / FEA Graph</option>
+                <option value="SolidWorks Motion">SolidWorks Motion Analysis</option>
+                <option value="Excel / OriginLab">Excel / OriginLab Plot</option>
+                <option value="LabVIEW DAQ">LabVIEW Data Acquisition</option>
+                <option value="Oscilloscope">Oscilloscope / Spectrum FFT</option>
+                <option value="Physical Sensors">Field Sensor Telemetry Rig</option>
+              </select>
+            </div>
+            <div>
+              <label for="graphYAxisLabel"
+                style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Y-Axis Metric &
+                Units:</label>
+              <input type="text" id="graphYAxisLabel" class="modal-input" placeholder="e.g. Acceleration Ahv (m/s²)">
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label for="graphXAxisLabel"
+              style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">X-Axis Metric &
+              Units:</label>
+            <input type="text" id="graphXAxisLabel" class="modal-input" placeholder="e.g. Frequency (Hz) or Time (s)">
+          </div>
+        </div>
+
+        <!-- Mode 3: Custom Chart Builder -->
+        <div id="graphCustomBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <div class="form-row-2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div>
+              <label for="customGraphType"
+                style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Chart Type:</label>
+              <select id="customGraphType" class="modal-select">
+                <option value="line">Line Chart</option>
+                <option value="bar">Bar Chart</option>
+                <option value="radar">Radar Chart</option>
+              </select>
+            </div>
+            <div>
+              <label for="customGraphSeriesName"
+                style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Series 1 Label:</label>
+              <input type="text" id="customGraphSeriesName" class="modal-input" placeholder="e.g. Measured Data">
+            </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label for="customGraphLabels"
+              style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">X-Axis Categories
+              (comma-separated):</label>
+            <input type="text" id="customGraphLabels" class="modal-input"
+              placeholder="e.g. 10Hz, 20Hz, 40Hz, 80Hz, 160Hz">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label for="customGraphData1"
+              style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Series 1 Numeric Values
+              (comma-separated):</label>
+            <input type="text" id="customGraphData1" class="modal-input" placeholder="e.g. 1.2, 3.4, 6.8, 9.5, 4.1">
+          </div>
+          <div>
+            <label for="customGraphData2"
+              style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Optional Series 2 Values
+              (Benchmark / Limit):</label>
+            <input type="text" id="customGraphData2" class="modal-input" placeholder="e.g. 2.5, 2.5, 2.5, 2.5, 2.5">
+          </div>
+        </div>
+
+        <!-- Mode 4: Import CSV Data File -->
+        <div id="graphCsvBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; font-size:0.82rem;">Import Tabular CSV Data
+            File (.csv, .txt):</label>
+          <div class="cad-upload-dropzone" id="graphCsvDropzone">
+            <i class="fa-solid fa-file-csv text-caramel" style="font-size:2.2rem;"></i>
+            <div class="cad-dropzone-title">Click to Browse or Drag & Drop CSV Data File</div>
+            <div class="cad-dropzone-subtitle">Parses numerical columns into an interactive Chart.js line/bar graph
+            </div>
+            <input type="file" id="graphCsvFileInput" accept=".csv,.txt" style="display:none;">
+          </div>
+          <div id="graphCsvSelectedInfo" class="cad-file-info-strip" style="display:none;">
+            <div class="cad-file-info-left">
+              <i class="fa-solid fa-file-circle-check"></i>
+              <span id="graphCsvFileNameDisplay">data.csv</span>
+              <small id="graphCsvFileSizeDisplay" style="color:var(--text-muted);">(0 KB)</small>
+            </div>
+            <span class="cad-badge-chip" style="background:#10b981; color:#fff;">PARSED CSV</span>
+          </div>
+
+          <div style="margin-top: 10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Or quick-load sample telemetry
+              CSV:</span>
+            <button type="button" class="btn-text-pill" id="btnSampleVibrationCsv"><i class="fa-solid fa-table"></i>
+              Sample Accel CSV</button>
+            <button type="button" class="btn-text-pill" id="btnSampleKinematicsCsv"><i class="fa-solid fa-table"></i>
+              Sample Kinematics CSV</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="graphCaptionInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Caption / Analytical
+            Takeaway:</label>
+          <input type="text" id="graphCaptionInput" class="modal-input"
+            placeholder="e.g. Verified under ISO 5349 tri-axial accelerometer at operator handles">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelGraph">Cancel</button>
+        <button class="btn-primary" id="btnConfirmAddGraph"><i class="fa-solid fa-chart-line"></i> Generate & Insert
+          Graph</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Add Simulation Video Modal -->
+  <div class="modal-overlay" id="addVideoModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-video text-caramel"></i> Add Simulation Video</h3>
+        <button class="close-modal" id="btnCloseVideoModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="videoTargetStageSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Target Stage (S1–S11):</label>
+          <select id="videoTargetStageSelect" class="modal-select"></select>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="videoTitleInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Video Title:</label>
+          <input type="text" id="videoTitleInput" class="modal-input"
+            placeholder="e.g. Dual-Slider Scotch-Yoke Motion & Harvesting Simulation">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Video Source:</label>
+          <div class="modal-tab-group">
+            <button type="button" class="modal-tab-btn active" data-video-source="workspace">Capstone Recording</button>
+            <button type="button" class="modal-tab-btn" data-video-source="upload">Upload Local Video</button>
+            <button type="button" class="modal-tab-btn" data-video-source="url">Video Link / URL</button>
+          </div>
+        </div>
+
+        <div id="videoSourceWorkspaceBlock" class="source-block active" style="margin-bottom: 12px;">
+          <div class="video-preset-banner">
+            <i class="fa-solid fa-circle-play text-caramel" style="font-size:1.6rem;"></i>
+            <div>
+              <strong>Screen_Recording_20261025_162709_Gmail.mp4</strong>
+              <p style="font-size:0.8rem; margin:0; color:var(--text-secondary);">Direct high-resolution capstone
+                demonstration video from project folder.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="videoSourceUploadBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label for="videoFileInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Select Video File (.mp4,
+            .webm):</label>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/webm" class="modal-input">
+        </div>
+
+        <div id="videoSourceUrlBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label for="videoUrlInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Direct Video Stream
+            URL:</label>
+          <input type="url" id="videoUrlInput" class="modal-input" placeholder="https://example.com/simulation.mp4">
+        </div>
+
+        <div class="form-group">
+          <label for="videoCaptionInput"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Caption / Operating
+            Parameters:</label>
+          <input type="text" id="videoCaptionInput" class="modal-input"
+            placeholder="e.g. Captured at 850 RPM PTO input speed showing zero secondary chassis shake">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelVideo">Cancel</button>
+        <button class="btn-primary" id="btnConfirmAddVideo"><i class="fa-solid fa-play"></i> Add Video to Stage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Add CAD 3D Model Modal -->
+  <div class="modal-overlay" id="addCadModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-cube text-caramel"></i> Add Interactive 3D CAD Model</h3>
+        <button class="close-modal" id="btnCloseCadModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="cadTargetStageSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">Target Stage (S1–S11):</label>
+          <select id="cadTargetStageSelect" class="modal-select"></select>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="cadTitleInput" style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">CAD
+            Model Title:</label>
+          <input type="text" id="cadTitleInput" class="modal-input"
+            placeholder="e.g. Opposed Scotch-Yoke Dual-Slider 3D Mechanism">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">3D CAD Model
+            Source:</label>
+          <div class="modal-tab-group">
+            <button type="button" class="modal-tab-btn active" data-cad-source="preset">Interactive 3D Presets</button>
+            <button type="button" class="modal-tab-btn" data-cad-source="upload">Import Local 3D File</button>
+          </div>
+        </div>
+
+        <!-- Preset 3D Assemblies -->
+        <div id="cadSourcePresetBlock" class="source-block active" style="margin-bottom: 12px;">
+          <label for="cadPresetSelect"
+            style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Select 3D Parametric CAD
+            Assembly Preset:</label>
+          <select id="cadPresetSelect" class="modal-select">
+            <option value="scotchyoke">Assembly 1: Opposed Scotch-Yoke Dual Kinematic Reciprocator (Dynamic 3D)</option>
+            <option value="cutterbar">Assembly 2: Serrated Knife Sections, Ledger Plates & Rock Guards (3D Cutter)
+            </option>
+            <option value="shaft">Assembly 3: PTO Input Drive Shaft, Universal Yoke & Deep-Groove Bearings</option>
+            <option value="chassis">Assembly 4: Universal 4-Bolt Power-Tiller Hitch Chassis Frame</option>
+          </select>
+        </div>
+
+        <!-- Local 3D CAD File Importer (Supports STL, OBJ, GLTF, GLB, STEP, STP, IGES) -->
+        <div id="cadSourceUploadBlock" class="source-block" style="display:none; margin-bottom: 12px;">
+          <label style="display:block; margin-bottom:6px; font-weight:600; font-size:0.82rem;">Import 3D CAD File from
+            Local Drive:</label>
+
+          <div class="cad-upload-dropzone" id="cadDropzone">
+            <i class="fa-solid fa-cloud-arrow-up text-caramel" style="font-size:2.2rem;"></i>
+            <div class="cad-dropzone-title">Click to Browse or Drag & Drop 3D Model</div>
+            <div class="cad-dropzone-subtitle">Directly parses & renders your CAD geometry in real-time WebGL 3D</div>
+
+            <div class="cad-badge-chips">
+              <span class="cad-badge-chip"><i class="fa-solid fa-cube"></i> .STL (Binary/ASCII)</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-shapes"></i> .OBJ (Wavefront)</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-layer-group"></i> .GLTF / .GLB</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-draw-polygon"></i> .STEP / .STP</span>
+              <span class="cad-badge-chip"><i class="fa-solid fa-vector-square"></i> .IGES</span>
+            </div>
+
+            <input type="file" id="cadFileInput" accept=".stl,.obj,.gltf,.glb,.step,.stp,.iges,.json"
+              style="display:none;">
+          </div>
+
+          <div id="cadSelectedFileInfo" class="cad-file-info-strip" style="display:none;">
+            <div class="cad-file-info-left">
+              <i class="fa-solid fa-file-circle-check"></i>
+              <span id="cadFileNameDisplay">model.stl</span>
+              <small id="cadFileSizeDisplay" style="color:var(--text-muted);">(0 KB)</small>
+            </div>
+            <span id="cadFormatBadge" class="cad-badge-chip"
+              style="background:var(--accent-color); color:#fff;">STL</span>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <label for="cadMaterialSelect"
+              style="display:block; margin-bottom:4px; font-weight:600; font-size:0.82rem;">Render Material / Surface
+              Finish:</label>
+            <select id="cadMaterialSelect" class="modal-select">
+              <option value="chrome">Mirror Chrome / Polished AISI 4140 Steel</option>
+              <option value="bronze">Bearing Bronze (SAE 660) / Brass</option>
+              <option value="steel">Industrial Dark Steel / Cast Iron</option>
+              <option value="gold">Gold Anodized Aerospace Alloy</option>
+              <option value="orange">High-Visibility Safety Orange (ISO 4254)</option>
+              <option value="wireframe">Blueprint Wireframe Mesh</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cadDescInput" style="display:block; margin-bottom:4px; font-weight:600; font-size:0.85rem;">CAD
+            Description / Mates & Fits:</label>
+          <input type="text" id="cadDescInput" class="modal-input"
+            placeholder="e.g. H7/g6 precision slider fit, 76.2 mm stroke, interactive 360° rotation">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelCad">Cancel</button>
+        <button class="btn-primary" id="btnConfirmAddCad"><i class="fa-solid fa-cube"></i> Add 3D CAD Model to
+          Stage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Image Lightbox Modal -->
+  <div class="modal-overlay" id="imageLightboxModal" style="z-index: 10000;">
+    <div class="lightbox-dialog">
+      <button class="close-lightbox" id="btnCloseLightbox">&times;</button>
+      <div class="lightbox-img-wrapper">
+        <img id="lightboxImage" src="" alt="Enlarged Engineering Artifact">
+      </div>
+      <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
