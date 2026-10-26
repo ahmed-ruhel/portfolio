@@ -7209,7 +7209,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCancelCad) btnCancelCad.addEventListener('click', () => addCadModal.classList.remove('active'));
 
   if (btnConfirmAddCad) {
-    btnConfirmAddCad.addEventListener('click', () => {
+    btnConfirmAddCad.addEventListener('click', async () => {
       const stageId = cadTargetStageSelect.value;
       const stage = stagesData.find(s => s.id === stageId);
       if (!stage) return;
