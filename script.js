@@ -1056,6 +1056,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // CONFIRM MODAL (moved here so it's available before bindStageEvents runs)
+  // ---------------------------------------------------------------------------
+  const customConfirmModal = document.getElementById('customConfirmModal');
+  const customConfirmTitle = document.getElementById('customConfirmTitle');
+  const customConfirmMessage = document.getElementById('customConfirmMessage');
+  const btnCancelCustomConfirm = document.getElementById('btnCancelCustomConfirm');
+  const btnOkCustomConfirm = document.getElementById('btnOkCustomConfirm');
+  let pendingCustomConfirmCallback = null;
+
+  function showConfirmModal(title, message, onConfirm) {
+    if (customConfirmTitle) customConfirmTitle.textContent = title || 'Confirm Action';
+    if (customConfirmMessage) customConfirmMessage.textContent = message || 'Are you sure you want to proceed?';
+    pendingCustomConfirmCallback = onConfirm;
+    if (customConfirmModal) {
+      customConfirmModal.classList.add('active');
+    } else {
+      // Fallback: run immediately if modal element is missing
+      if (typeof onConfirm === 'function') onConfirm();
+    }
+  }
+
+  if (btnCancelCustomConfirm) {
+    btnCancelCustomConfirm.addEventListener('click', () => {
+      if (customConfirmModal) customConfirmModal.classList.remove('active');
+      pendingCustomConfirmCallback = null;
+    });
+  }
+
+  if (btnOkCustomConfirm) {
+    btnOkCustomConfirm.addEventListener('click', () => {
+      if (customConfirmModal) customConfirmModal.classList.remove('active');
+      if (typeof pendingCustomConfirmCallback === 'function') {
+        const cb = pendingCustomConfirmCallback;
+        pendingCustomConfirmCallback = null;
+        cb();
+      }
+    });
+  }
+
+  // Helper to Delete Media from Stage (Supports numeric and string IDs)
+  async function deleteMediaItem(stageId, mediaId) {
+    const stage = stagesData.find(s => s.id === stageId);
+    if (!stage || !stage.media) return;
+
+    stage.media = stage.media.filter(m => String(m.id) !== String(mediaId));
+    saveStagesData();
+    renderAllStages();
+    showToast(`Removed attachment from Stage ${stage.number || stageId}`);
+
+    // Async delete from backend
+    try {
+      await fetch(`/api/stages/${stageId}/media/${encodeURIComponent(mediaId)}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Backend media deletion failed:', err);
+    }
+  }
+
+  // Document-level event delegation for delete-media buttons
+  // (replaces per-render querySelectorAll so newly rendered buttons always work)
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action="delete-media"]');
+    if (!btn) return;
+    e.stopPropagation();
+    const stageId = btn.getAttribute('data-stage');
+    const mediaId = btn.getAttribute('data-media-id');
+    showConfirmModal('Delete Attachment', 'Are you sure you want to remove this media attachment?', () => {
+      deleteMediaItem(stageId, mediaId);
+    });
+  });
+
   async function checkBackendHealth() {
     try {
       const res = await fetch('/api/health');
@@ -2088,17 +2159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Delete Media Item Button
-    document.querySelectorAll('[data-action="delete-media"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const stageId = btn.getAttribute('data-stage');
-        const mediaId = btn.getAttribute('data-media-id');
-        showConfirmModal('Delete Attachment', 'Are you sure you want to remove this media attachment from this stage?', () => {
-          deleteMediaItem(stageId, mediaId);
-        });
-      });
-    });
+    // Delete Media: handled via document-level delegation (see top of script)
   }
 
   // Populate Stage Dropdown Helper
@@ -3209,60 +3270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Safe Confirmation Modal for Google Sites Sandboxed Iframes (no window.confirm needed)
-  const customConfirmModal = document.getElementById('customConfirmModal');
-  const customConfirmTitle = document.getElementById('customConfirmTitle');
-  const customConfirmMessage = document.getElementById('customConfirmMessage');
-  const btnCancelCustomConfirm = document.getElementById('btnCancelCustomConfirm');
-  const btnOkCustomConfirm = document.getElementById('btnOkCustomConfirm');
-  let pendingCustomConfirmCallback = null;
-
-  function showConfirmModal(title, message, onConfirm) {
-    if (customConfirmTitle) customConfirmTitle.textContent = title || 'Confirm Action';
-    if (customConfirmMessage) customConfirmMessage.textContent = message || 'Are you sure you want to proceed?';
-    pendingCustomConfirmCallback = onConfirm;
-    if (customConfirmModal) {
-      customConfirmModal.classList.add('active');
-    } else {
-      if (typeof onConfirm === 'function') onConfirm();
-    }
-  }
-
-  if (btnCancelCustomConfirm) {
-    btnCancelCustomConfirm.addEventListener('click', () => {
-      if (customConfirmModal) customConfirmModal.classList.remove('active');
-      pendingCustomConfirmCallback = null;
-    });
-  }
-
-  if (btnOkCustomConfirm) {
-    btnOkCustomConfirm.addEventListener('click', () => {
-      if (customConfirmModal) customConfirmModal.classList.remove('active');
-      if (typeof pendingCustomConfirmCallback === 'function') {
-        const cb = pendingCustomConfirmCallback;
-        pendingCustomConfirmCallback = null;
-        cb();
-      }
-    });
-  }
-
-  // Helper to Delete Media from Stage (Supports numeric and string IDs)
-  async function deleteMediaItem(stageId, mediaId) {
-    const stage = stagesData.find(s => s.id === stageId);
-    if (!stage || !stage.media) return;
-
-    stage.media = stage.media.filter(m => String(m.id) !== String(mediaId));
-    saveStagesData();
-    renderAllStages();
-    showToast(`Removed attachment from ${stage.number}`);
-
-    // Async delete from backend
-    try {
-      await fetch(`/api/stages/${stageId}/media/${encodeURIComponent(mediaId)}`, { method: 'DELETE' });
-    } catch (err) {
-      console.warn('Backend media deletion failed:', err);
-    }
-  }
+  // Confirm modal + deleteMediaItem moved to top of script (after saveStagesData) for correct initialization order
 
   // ---------------------------------------------------------------------------
   // FILTERING, SEARCH, EXPAND ALL & RESET CONTROLS
