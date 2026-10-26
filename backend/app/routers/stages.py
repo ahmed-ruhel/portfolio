@@ -140,9 +140,12 @@ async def add_media_to_stage(stage_id: str, media_item: Dict[str, Any] = Body(..
     return {"status": "success", "mediaId": new_id, "stageId": stage_id.upper()}
 
 @router.delete("/{stage_id}/media/{media_id}")
-async def delete_media(stage_id: str, media_id: int):
+async def delete_media(stage_id: str, media_id: str):
     async with get_db_connection() as db:
-        await db.execute("DELETE FROM stage_media WHERE id = ? AND stage_id = ?", (media_id, stage_id.upper()))
+        if media_id.isdigit():
+            await db.execute("DELETE FROM stage_media WHERE id = ? AND stage_id = ?", (int(media_id), stage_id.upper()))
+        else:
+            await db.execute("DELETE FROM stage_media WHERE stage_id = ? AND (source_val LIKE ? OR meta_json LIKE ?)", (stage_id.upper(), f"%{media_id}%", f"%{media_id}%"))
         await db.commit()
     return {"status": "success", "message": f"Media {media_id} deleted"}
 

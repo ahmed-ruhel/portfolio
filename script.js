@@ -1267,15 +1267,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inject appropriate viewer
     if (item.type === 'image') {
+      let imgSrc = item.src || item.fileUrl || item.url || '';
+      if (!imgSrc || item.sourceType === 'preset' || item.presetKey || imgSrc === 'survey' || imgSrc === 'functional' || (!imgSrc.startsWith('http') && !imgSrc.startsWith('data:') && !imgSrc.startsWith('/'))) {
+        imgSrc = generateSvgDiagram(item.presetKey || item.source_val || imgSrc || 'survey');
+      }
       const imgWrapper = document.createElement('div');
       imgWrapper.className = 'media-img-wrapper';
       imgWrapper.title = 'Click to enlarge';
       imgWrapper.innerHTML = `
-        <img src="${item.src}" alt="${item.title}" class="media-img-element">
+        <img src="${imgSrc}" alt="${item.title}" class="media-img-element">
         <div class="img-zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> Enlarge</div>
       `;
       imgWrapper.addEventListener('click', () => {
-        openLightbox(item.src, `${item.title} — ${item.caption || ''}`);
+        openLightbox(imgSrc, `${item.title} — ${item.caption || ''}`);
       });
       bodyEl.appendChild(imgWrapper);
 
@@ -2078,9 +2082,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         const stageId = btn.getAttribute('data-stage');
         const pIndex = parseInt(btn.getAttribute('data-prompt-index'), 10);
-        if (confirm('Are you sure you want to delete this deliverable prompt?')) {
+        showConfirmModal('Delete Deliverable Prompt', 'Are you sure you want to delete this deliverable prompt?', () => {
           deletePrompt(stageId, pIndex);
-        }
+        });
       });
     });
 
@@ -2090,9 +2094,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         const stageId = btn.getAttribute('data-stage');
         const mediaId = btn.getAttribute('data-media-id');
-        if (confirm('Delete this media attachment?')) {
+        showConfirmModal('Delete Attachment', 'Are you sure you want to remove this media attachment from this stage?', () => {
           deleteMediaItem(stageId, mediaId);
-        }
+        });
       });
     });
   }
@@ -2205,10 +2209,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnDeletePrompt.addEventListener('click', () => {
       const stageId = modalPromptStageId.value;
       const pIndex = parseInt(modalPromptIndex.value, 10);
-      if (confirm('Delete this deliverable prompt?')) {
+      showConfirmModal('Delete Deliverable', 'Delete this deliverable prompt from the stage?', () => {
         deletePrompt(stageId, pIndex);
         closePromptModal();
-      }
+      });
     });
   }
 
@@ -3205,19 +3209,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Helper to Delete Media from Stage
+  // Safe Confirmation Modal for Google Sites Sandboxed Iframes (no window.confirm needed)
+  const customConfirmModal = document.getElementById('customConfirmModal');
+  const customConfirmTitle = document.getElementById('customConfirmTitle');
+  const customConfirmMessage = document.getElementById('customConfirmMessage');
+  const btnCancelCustomConfirm = document.getElementById('btnCancelCustomConfirm');
+  const btnOkCustomConfirm = document.getElementById('btnOkCustomConfirm');
+  let pendingCustomConfirmCallback = null;
+
+  function showConfirmModal(title, message, onConfirm) {
+    if (customConfirmTitle) customConfirmTitle.textContent = title || 'Confirm Action';
+    if (customConfirmMessage) customConfirmMessage.textContent = message || 'Are you sure you want to proceed?';
+    pendingCustomConfirmCallback = onConfirm;
+    if (customConfirmModal) {
+      customConfirmModal.classList.add('active');
+    } else {
+      if (typeof onConfirm === 'function') onConfirm();
+    }
+  }
+
+  if (btnCancelCustomConfirm) {
+    btnCancelCustomConfirm.addEventListener('click', () => {
+      if (customConfirmModal) customConfirmModal.classList.remove('active');
+      pendingCustomConfirmCallback = null;
+    });
+  }
+
+  if (btnOkCustomConfirm) {
+    btnOkCustomConfirm.addEventListener('click', () => {
+      if (customConfirmModal) customConfirmModal.classList.remove('active');
+      if (typeof pendingCustomConfirmCallback === 'function') {
+        const cb = pendingCustomConfirmCallback;
+        pendingCustomConfirmCallback = null;
+        cb();
+      }
+    });
+  }
+
+  // Helper to Delete Media from Stage (Supports numeric and string IDs)
   async function deleteMediaItem(stageId, mediaId) {
     const stage = stagesData.find(s => s.id === stageId);
     if (!stage || !stage.media) return;
 
-    stage.media = stage.media.filter(m => m.id !== mediaId);
+    stage.media = stage.media.filter(m => String(m.id) !== String(mediaId));
     saveStagesData();
     renderAllStages();
     showToast(`Removed attachment from ${stage.number}`);
 
     // Async delete from backend
     try {
-      await fetch(`/api/stages/${stageId}/media/${mediaId}`, { method: 'DELETE' });
+      await fetch(`/api/stages/${stageId}/media/${encodeURIComponent(mediaId)}`, { method: 'DELETE' });
     } catch (err) {
       console.warn('Backend media deletion failed:', err);
     }
@@ -3319,17 +3360,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnClearAllStages) {
     btnClearAllStages.addEventListener('click', () => {
-      if (confirm('Clear all stages S1 through S11? All prompts and media will be emptied so you can start completely fresh.')) {
+      showConfirmModal('Clear All Stages', 'Clear all stages S1 through S11? All prompts and media will be emptied so you can start completely fresh.', () => {
         clearStagesToEmpty();
-      }
+      });
     });
   }
 
   if (btnResetStagesData) {
     btnResetStagesData.addEventListener('click', () => {
-      if (confirm('Clear all stages S1 through S11? All prompts and media will be emptied so you can start completely fresh.')) {
+      showConfirmModal('Clear All Stages', 'Clear all stages S1 through S11? All prompts and media will be emptied so you can start completely fresh.', () => {
         clearStagesToEmpty();
-      }
+      });
     });
   }
 
